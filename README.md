@@ -11,6 +11,14 @@ accessed using the generic `request` method.
 from veeqo import VeeqoClient
 
 client = VeeqoClient(api_key="YOUR_API_KEY")
-products = client.list_products(limit=10)
+products = client.list_products(page=1)
 print(products)
+```
+
+You can also run the example script in ``examples/get_products.py``. Set the
+``VEEQO_API_KEY`` environment variable if you don't want to edit the file:
+
+```bash
+export VEEQO_API_KEY=YOUR_API_KEY
+python examples/get_products.py
 ```
