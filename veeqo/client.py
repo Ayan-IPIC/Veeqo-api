@@ -4,7 +4,8 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, Optional
+from itertools import cycle
+from typing import Any, Dict, Iterable, Optional, Sequence
 
 
 class VeeqoClient:
@@ -15,12 +16,29 @@ class VeeqoClient:
     the generic :py:meth:`request` method.
     """
 
-    def __init__(self, api_key: str, base_url: str = "https://api.veeqo.com") -> None:
-        self.api_key = api_key
+    def __init__(self, api_keys: Sequence[str], base_url: str = "https://api.veeqo.com") -> None:
+        """Create a client with one or more API keys.
+
+        Parameters
+        ----------
+        api_keys:
+            A sequence of API keys. If more than one key is provided they will
+            be used in a round-robin fashion for successive requests.
+        base_url:
+            Base URL for the API. Defaults to the public Veeqo endpoint.
+        """
+
+        if isinstance(api_keys, str):
+            api_keys = [api_keys]
+
+        self._api_key_cycle = cycle(api_keys)
         self.base_url = base_url.rstrip("/")
-        self.headers = {
-            "Authorization": f"Bearer {api_key}",
+
+    def get_headers(self) -> Dict[str, str]:
+        """Return headers for a request using the next API key."""
+        return {
             "Content-Type": "application/json",
+            "x-api-key": next(self._api_key_cycle),
         }
 
     def request(
@@ -52,7 +70,8 @@ class VeeqoClient:
         if json_data is not None:
             data = json.dumps(json_data).encode()
 
-        req = urllib.request.Request(url, data=data, headers=self.headers, method=method)
+        headers = self.get_headers()
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:
             with urllib.request.urlopen(req) as resp:
                 body = resp.read()
